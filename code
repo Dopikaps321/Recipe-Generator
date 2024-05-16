@@ -1,0 +1,70 @@
+import pandas as pd
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.neural_network import MLPClassifier
+import warnings
+
+# Suppress FutureWarning
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
+# Load the dataset
+dataset_path = r"Mini_Cleaned_Recipe_dataset.csv"
+recipes_df = pd.read_csv(dataset_path)
+
+# Function to preprocess the data
+def preprocess_data(data):
+    return data.lower()  # Convert text to lowercase
+
+# Preprocess the data
+recipes_df['Ingredients'] = recipes_df['Ingredients'].apply(preprocess_data)
+
+# Vectorize the ingredients
+vectorizer = CountVectorizer()
+X = vectorizer.fit_transform(recipes_df['Ingredients'])
+
+# Encode the recipe names
+label_encoder = LabelEncoder()
+y = label_encoder.fit_transform(recipes_df['Recipe_Name'])
+
+# Split the dataset into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Train the MLP classifier with specified epochs and batch size
+def train_mlp_classifier(X_train, y_train, X_test, y_test, epochs, batch_size):
+    mlp_model = MLPClassifier(hidden_layer_sizes=(100, 50), max_iter=1, batch_size=batch_size, random_state=42, warm_start=True)
+    for epoch in range(epochs):
+        mlp_model.fit(X_train, y_train)
+        train_accuracy = mlp_model.score(X_train, y_train)
+        val_loss = mlp_model.loss_
+        val_accuracy = mlp_model.score(X_test, y_test)
+        print(f"Epoch {epoch+1}/{epochs} - Train Accuracy: {train_accuracy:.4f} - Validation Loss: {val_loss:.4f} - Validation Accuracy: {val_accuracy:.4f}")
+    return mlp_model
+
+# Train the MLP classifier
+mlp_model = train_mlp_classifier(X_train, y_train, X_test, y_test, epochs=200, batch_size=256)
+
+# Compute training and testing accuracies
+train_accuracy = mlp_model.score(X_train, y_train)
+test_accuracy = mlp_model.score(X_test, y_test)
+
+print("Training Accuracy:", train_accuracy)
+print("Testing Accuracy:", test_accuracy)
+
+# Function to generate recipe based on user-provided ingredients
+def generate_recipe(ingredients, mlp_model, vectorizer, label_encoder):
+    # Preprocess user-provided ingredients
+    processed_ingredients = preprocess_data(", ".join(ingredients))
+    # Vectorize the processed ingredients
+    user_input = vectorizer.transform([processed_ingredients])
+    # Predict the recipe using the trained model
+    predicted_label = mlp_model.predict(user_input)
+    # Convert the label back to recipe name
+    predicted_recipe = label_encoder.inverse_transform(predicted_label)[0]
+    # Fetch instructions for the predicted recipe
+    instructions = recipes_df.loc[recipes_df['Recipe_Name'] == predicted_recipe, 'Instruction'].values[0]
+   
+    # Concatenate instructions into a paragraph-like structure
+    instruction_paragraph = ' '.join(instructions)
+   
+    return predicted_recipe, instruction_paragraph
