@@ -5,7 +5,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.preprocessing import LabelEncoder
 
 # Load the saved MLP model
-model_path = "C:/Users/Alaxo joy/OneDrive/Desktop/New folder/trained_mlp_model.pkl"
+model_path = "C:/Users/blee/OneDrive/Desktop/New folder/trained_mlp_model.pkl"
 mlp_model = joblib.load(model_path)
 
 # Load the dataset
